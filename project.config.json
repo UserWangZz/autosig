@@ -39,12 +39,12 @@
 			"list": []
 		},
 		"miniprogram": {
-			"current": -1,
+			"current": 2,
 			"list": [
 				{
 					"id": -1,
 					"name": "sign",
-					"pathName": "pages/sign/home/home",
+					"pathName": "pages/index/home",
 					"query": "",
 					"scene": null
 				},
@@ -53,6 +53,12 @@
 					"name": "groups",
 					"pathName": "pages/groups/groups",
 					"query": "",
+					"scene": null
+				},
+				{
+					"id": -1,
+					"name": "groupedit",
+					"pathName": "pages/groups/groupedit/groupedit",
 					"scene": null
 				}
 			]

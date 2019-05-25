@@ -1,10 +1,11 @@
 const app = getApp()
 Page({
   data: {
+    tabCur: 0,
     showSearchResults: false,
     groupName: '测试群组 2',
     groupDesc: 'TFEEWLIGNJERKGJKBFEWBFWLGVNWWL WENFWLJGKWKVL WKNF KGWG W GWGW EWJKFGRGGNWGWB BER,BGL',
-    loading: [false, false, false, false], // nearby, attended, created, search
+    loading: [true, true, true, true, true], // nearby, attended, created, search, mac
     nearbyGroups: null,
     lenNearbyGroups: 0,
     attendedGroups: null,
@@ -16,9 +17,11 @@ Page({
     maxlenNearbyGroups: 10, // “附近群组”最多显示的数据条数
     searchContent: '',
     currentGroup: null,
-    showGroupDetails: false
+    showGroupDetails: false,
+    wlanMac: '',
+    wlanMacOrigin: ''
   },
-  onShow: function (opt) {
+  onLoad: function (opt) {
     this.fetchData()
   },
   /**
@@ -76,6 +79,22 @@ Page({
         }
       }
     )
+    // 获取WLAN MAC地址
+    this.setData({ 'loading[4]': true })
+    api.getWlanMAC(
+      app.globalData.token,
+      function (status, data) {
+        _this.setData({ 'loading[4]': false })
+        if (status.code == 0) {
+          _this.setData({
+            wlanMac: data.wlan_mac,
+            wlanMacOrigin: data.wlan_mac
+          })
+        } else {
+          api.showError(status)
+        }
+      }
+    )
   },
   /**
    * Helper函数- 加入群组
@@ -94,15 +113,18 @@ Page({
         wx.hideLoading()
         if (status.code == 0) {
           _this.fetchData()
-          wx.showToast({
-            title: '加入成功',
-            showCancel: false
-          })
         } else {
           api.showError(status)
         }
       }
     )
+    app.globalData.index_fetchData()
+  },
+  /**
+   * 切换 标签栏
+   */
+  onTabSwitch: function(e) {
+    this.setData({tabCur: e.currentTarget.dataset.id})
   },
   /**
    * 单击 创建群组
@@ -265,5 +287,68 @@ Page({
   onOpenCreatedGroupEdit(e) {
     var group = e.currentTarget.dataset.cur
     this.showGroupEdit(group, true)
+  },
+  /**
+   * 单击 帮助按钮
+   */
+  onHelpTab() {
+  },
+  bindWlanMacInput(e) {
+    this.setData({ wlanMac: e.detail.value })
+  },
+  /**
+   * 单击 保存（WLAN MAC）设置按钮
+   */
+  onSaveWlanMac() {
+    var err = null
+    if (this.data.wlanMac.length == 0) {
+      err = '请输入MAC地址'
+    }
+    // 校验MAC地址格式
+    var inv_mac = false
+    if (this.data.wlanMac.length != 17)
+      inv_mac = true
+    var macs = this.data.wlanMac.split(':')
+    if (macs.length != 6) {
+      inv_mac = true
+    }
+    var i = macs.length
+    while(i--) {
+      if (macs[i].length != 2) {
+        inv_mac = true
+      }
+    }
+    if (inv_mac) {
+      err = '请输入正确的MAC地址。实例ab:ab:ab:ab:ab:ab'
+    }
+    if (err) {
+      wx.showModal({
+        title: '完善信息',
+        content: err,
+        showCancel: false
+      })
+      return
+    }
+    wx.showLoading({
+      title: '加载中',
+    })
+    this.setData({ lenSearchResults: 0 })
+    var api = require('../../service/autosig-apis')
+    var _this = this
+    api.updateWlanMAC(
+      _this.data.wlanMac,
+      app.globalData.token,
+      function (status, data) {
+        wx.hideLoading()
+        if (status.code == 0) {
+          _this.setData({ wlanMacOrigin: _this.data.wlanMac }) //同步远程数据
+          wx.showToast({
+            title: '成功设置',
+          })
+        } else {
+          api.showError(status)
+        }
+      }
+    )
   }
 })
